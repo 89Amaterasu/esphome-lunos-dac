@@ -1,0 +1,16 @@
+name: "DFRobot GP8403 Lunos Fan Controller"
+description: "Controls Lunos fan controllers via GP8403 DAC"
+files:
+  - "lunos_dac.h"
+  - "lunos_dac.cpp"
+  - "__init__.py"
+  - "README.md"
+dependencies:
+  - i2c
+  - fan
+esphome:
+  name: lunos_dac
+  platforms:
+    - fan
+  components:
+    - lunos_dac
