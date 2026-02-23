@@ -37,6 +37,6 @@ i2c:
 fan:
   - platform: lunos_dac_fan
     name: "Lunos Ventilation"
-    address: 0x58            # I2C address for the GP8403 DAC
-    boot_speed: 3            
-    boot_oscillation: true
+    address: 0x58 # I2C address for the GP8403 DAC
+    boot_speed: 3 # Fan speed at boot (3 of 8)            
+    boot_oscillation: true # Fan oscillation at boot
