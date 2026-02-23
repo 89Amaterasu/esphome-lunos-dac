@@ -3,7 +3,7 @@
 This ESPHome external component provides a native interface to control **Lunos 5/UNI-FT** and **5/SC-FT** universal control units using a DFRobot GP8403 I2C DAC.
 
 ## 🛠 Hardware
-- **Microcontroller:** Wemos D1 Mini
+- **Microcontroller:** Wemos D1 Mini or any other ESP8266 or ESP32
 - **DAC:** [DFRobot GP8403](https://www.dfrobot.com/product-2612.html)
 - **Lunos Controller:** 5/UNI-FT or 5/SC-FT
 
