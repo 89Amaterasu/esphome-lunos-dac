@@ -13,6 +13,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
   DFRobot_GP8403 dac_;
   int boot_speed_;
   bool boot_oscillation_;
+  std::string boot_preset_{"Auto"};
 
   const uint16_t mv_osc[9] = {750, 1250, 1750, 2250, 2750, 3250, 3750, 4250, 4750};
   const uint16_t mv_sum[9] = {750, 6250, 6750, 7250, 7750, 8250, 8750, 9250, 9750};
@@ -22,10 +23,11 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
 
   void set_boot_speed(int speed) { this->boot_speed_ = speed; }
   void set_boot_oscillation(bool osc) { this->boot_oscillation_ = osc; }
+  void set_boot_preset(const std::string &preset) { this->boot_preset_ = preset; }
 
   void setup() override {
     dac_ = DFRobot_GP8403(&Wire, this->address_);
-    
+
     if (dac_.begin() != 0) {
       ESP_LOGE("lunos", "GP8403 DAC not found at address 0x%02X", this->address_);
     }
@@ -34,6 +36,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     this->state = true;
     this->speed = this->boot_speed_;
     this->oscillating = this->boot_oscillation_;
+    this->preset_mode = this->boot_preset_;
 
     uint16_t boot_mv = this->oscillating ? mv_osc[this->speed] : mv_sum[this->speed];
     dac_.setDACOutVoltage(boot_mv, 0);
@@ -45,6 +48,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     traits.set_oscillation(true);
     traits.set_speed(true);
     traits.set_supported_speed_count(8);
+    traits.set_supported_preset_modes({"Auto", "Manual"});
     return traits;
   }
 
@@ -52,8 +56,9 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     if (call.get_state().has_value()) this->state = *call.get_state();
     if (call.get_speed().has_value()) this->speed = *call.get_speed();
     if (call.get_oscillating().has_value()) this->oscillating = *call.get_oscillating();
+    if (call.get_preset_mode().has_value()) this->preset_mode = *call.get_preset_mode();
 
-    uint16_t voltage_mv = 750; 
+    uint16_t voltage_mv = 750;
     if (this->state && this->speed > 0) {
       voltage_mv = this->oscillating ? mv_osc[this->speed] : mv_sum[this->speed];
     }

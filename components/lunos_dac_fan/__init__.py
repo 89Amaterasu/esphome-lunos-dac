@@ -8,9 +8,11 @@ LunosDACFan = lunos_ns.class_("LunosDACFan", cg.Component, i2c.I2CDevice)
 
 CONF_BOOT_SPEED = "boot_speed"
 CONF_BOOT_OSCILLATION = "boot_oscillation"
+CONF_BOOT_PRESET = "boot_preset"
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(LunosDACFan),
     cv.Optional(CONF_BOOT_SPEED, default=3): cv.int_range(min=0, max=8),
     cv.Optional(CONF_BOOT_OSCILLATION, default=True): cv.boolean,
+    cv.Optional(CONF_BOOT_PRESET, default="Auto"): cv.one_of("Auto", "Manual", lower=False),
 }).extend(cv.COMPONENT_SCHEMA).extend(i2c.i2c_device_schema(0x58))
