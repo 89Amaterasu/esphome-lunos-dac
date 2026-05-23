@@ -33,13 +33,11 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     }
     dac_.setDACOutRange(dac_.eOutputRange10V);
 
-    // Register preset modes on the entity (2026.4+ API, replaces traits setter)
     this->set_supported_preset_modes({"Auto", "Manual"});
 
     this->state = true;
     this->speed = this->boot_speed_;
     this->oscillating = this->boot_oscillation_;
-    // set_preset_mode_ is protected but accessible from this subclass
     this->set_preset_mode_(this->boot_preset_);
 
     uint16_t boot_mv = this->oscillating ? mv_osc[this->speed] : mv_sum[this->speed];
@@ -52,6 +50,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     traits.set_oscillation(true);
     traits.set_speed(true);
     traits.set_supported_speed_count(8);
+    traits.set_supported_preset_modes(this->preset_modes_);
     return traits;
   }
 
@@ -59,7 +58,6 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     if (call.get_state().has_value()) this->state = *call.get_state();
     if (call.get_speed().has_value()) this->speed = *call.get_speed();
     if (call.get_oscillating().has_value()) this->oscillating = *call.get_oscillating();
-    // apply_preset_mode_ is the correct protected helper for handling preset from a FanCall
     this->apply_preset_mode_(call);
 
     uint16_t voltage_mv = 750;
