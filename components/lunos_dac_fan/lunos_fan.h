@@ -48,7 +48,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
 
   // Per 2026.4 migration guide: return plain FanTraits, presets are wired automatically
   fan::FanTraits get_traits() override {
-    return fan::FanTraits(true, true, true);
+    return fan::FanTraits(true, true, false, 8);
   }
 
   void control(const fan::FanCall &call) override {
