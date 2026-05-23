@@ -33,9 +33,6 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     }
     dac_.setDACOutRange(dac_.eOutputRange10V);
 
-    // 2026.4+ API: set once on the entity, traits picks them up automatically
-    this->set_supported_preset_modes({"Auto", "Manual"});
-
     this->state = true;
     this->speed = this->boot_speed_;
     this->oscillating = this->boot_oscillation_;
@@ -46,9 +43,12 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     this->publish_state();
   }
 
-  // Per 2026.4 migration guide: return plain FanTraits, presets are wired automatically
   fan::FanTraits get_traits() override {
-    return fan::FanTraits(true, true, false, 8);
+    auto traits = fan::FanTraits();
+    traits.set_oscillation(true);
+    traits.set_speed(true);
+    traits.set_supported_speed_count(8);
+    return traits;
   }
 
   void control(const fan::FanCall &call) override {
