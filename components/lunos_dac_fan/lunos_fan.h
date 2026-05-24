@@ -17,6 +17,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
   int boot_speed_;
   bool boot_oscillation_;
   std::string boot_preset_{"Auto"};
+  std::string current_preset_{"Auto"};
   fan::FanTraits traits_;
 
   const uint16_t mv_osc[9] = {750, 1250, 1750, 2250, 2750, 3250, 3750, 4250, 4750};
@@ -27,7 +28,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
 
   void set_boot_speed(int speed) { this->boot_speed_ = speed; }
   void set_boot_oscillation(bool osc) { this->boot_oscillation_ = osc; }
-  void set_boot_preset(const std::string &preset) { this->boot_preset_ = preset; }
+  void set_boot_preset(const std::string &preset) { this->boot_preset_ = preset; this->current_preset_ = preset; }
 
   void setup() override {
     dac_ = DFRobot_GP8403(&Wire, this->address_);
@@ -40,12 +41,14 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     this->traits_.set_oscillation(true);
     this->traits_.set_speed(true);
     this->traits_.set_supported_speed_count(8);
-    // Use initializer_list overload directly
     this->traits_.set_supported_preset_modes({"Auto", "Manual"});
 
     this->state = true;
     this->speed = this->boot_speed_;
     this->oscillating = this->boot_oscillation_;
+
+    // Set initial preset via traits lookup so the pointer is valid
+    this->set_preset_mode_(this->boot_preset_);
 
     uint16_t boot_mv = this->oscillating ? mv_osc[this->speed] : mv_sum[this->speed];
     dac_.setDACOutVoltage(boot_mv, 0);
@@ -58,7 +61,12 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     if (call.get_state().has_value()) this->state = *call.get_state();
     if (call.get_speed().has_value()) this->speed = *call.get_speed();
     if (call.get_oscillating().has_value()) this->oscillating = *call.get_oscillating();
-    this->apply_preset_mode_(call);
+
+    // If preset is explicitly changed, remember it; otherwise restore current preset
+    if (call.get_preset_mode() != nullptr) {
+      this->current_preset_ = call.get_preset_mode();
+    }
+    this->set_preset_mode_(this->current_preset_);
 
     uint16_t voltage_mv = 750;
     if (this->state && this->speed > 0) {
