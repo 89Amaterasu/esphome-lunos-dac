@@ -33,10 +33,17 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     }
     dac_.setDACOutRange(dac_.eOutputRange10V);
 
+    // Register preset modes on the entity (2026.4+ API)
+    this->set_supported_preset_modes({"Auto", "Manual"});
+
     this->state = true;
     this->speed = this->boot_speed_;
     this->oscillating = this->boot_oscillation_;
-    this->set_preset_mode_(this->boot_preset_);
+
+    // Set initial preset via FanCall so the framework handles it correctly
+    auto call = this->make_call();
+    call.set_preset_mode(this->boot_preset_.c_str());
+    call.perform();
 
     uint16_t boot_mv = this->oscillating ? mv_osc[this->speed] : mv_sum[this->speed];
     dac_.setDACOutVoltage(boot_mv, 0);

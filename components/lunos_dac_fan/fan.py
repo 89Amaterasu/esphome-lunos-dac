@@ -21,6 +21,3 @@ async def to_code(config):
     cg.add(var.set_boot_oscillation(config[CONF_BOOT_OSCILLATION]))
     cg.add(var.set_boot_preset(config[CONF_BOOT_PRESET]))
     cg.add_library("dfrobot/DFRobot_GP8403", None)
-
-    # Register preset modes at compile time via codegen (2026.4+ API)
-    cg.add(var.set_supported_preset_modes(["Auto", "Manual"]))
