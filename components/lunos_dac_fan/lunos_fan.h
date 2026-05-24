@@ -1,5 +1,8 @@
 #pragma once
 
+#include <set>
+#include <string>
+
 #include "esphome/core/component.h"
 #include "esphome/components/fan/fan.h"
 #include "esphome/components/i2c/i2c.h"
@@ -14,6 +17,8 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
   int boot_speed_;
   bool boot_oscillation_;
   std::string boot_preset_{"Auto"};
+  std::set<std::string> preset_modes_{"Auto", "Manual"};
+  fan::FanTraits traits_;
 
   const uint16_t mv_osc[9] = {750, 1250, 1750, 2250, 2750, 3250, 3750, 4250, 4750};
   const uint16_t mv_sum[9] = {750, 6250, 6750, 7250, 7750, 8250, 8750, 9250, 9750};
@@ -33,36 +38,30 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     }
     dac_.setDACOutRange(dac_.eOutputRange10V);
 
-    // Register preset modes on the entity (2026.4+ API)
-    this->set_supported_preset_modes({"Auto", "Manual"});
+    // Build traits exactly like SpeedFan does
+    this->traits_.set_oscillation(true);
+    this->traits_.set_speed(true);
+    this->traits_.set_supported_speed_count(8);
+    this->traits_.set_supported_preset_modes(this->preset_modes_);
 
     this->state = true;
     this->speed = this->boot_speed_;
     this->oscillating = this->boot_oscillation_;
-
-    // Set initial preset via FanCall so the framework handles it correctly
-    auto call = this->make_call();
-    call.set_preset_mode(this->boot_preset_.c_str());
-    call.perform();
 
     uint16_t boot_mv = this->oscillating ? mv_osc[this->speed] : mv_sum[this->speed];
     dac_.setDACOutVoltage(boot_mv, 0);
     this->publish_state();
   }
 
-  fan::FanTraits get_traits() override {
-    auto traits = fan::FanTraits();
-    traits.set_oscillation(true);
-    traits.set_speed(true);
-    traits.set_supported_speed_count(8);
-    return traits;
-  }
+  fan::FanTraits get_traits() override { return this->traits_; }
 
   void control(const fan::FanCall &call) override {
     if (call.get_state().has_value()) this->state = *call.get_state();
     if (call.get_speed().has_value()) this->speed = *call.get_speed();
     if (call.get_oscillating().has_value()) this->oscillating = *call.get_oscillating();
-    this->apply_preset_mode_(call);
+    if (call.get_preset_mode() != nullptr) {
+      this->preset_mode = call.get_preset_mode();
+    }
 
     uint16_t voltage_mv = 750;
     if (this->state && this->speed > 0) {
