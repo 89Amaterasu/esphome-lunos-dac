@@ -1,6 +1,6 @@
 #pragma once
 
-#include <set>
+#include <vector>
 #include <string>
 
 #include "esphome/core/component.h"
@@ -17,7 +17,6 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
   int boot_speed_;
   bool boot_oscillation_;
   std::string boot_preset_{"Auto"};
-  std::set<std::string> preset_modes_{"Auto", "Manual"};
   fan::FanTraits traits_;
 
   const uint16_t mv_osc[9] = {750, 1250, 1750, 2250, 2750, 3250, 3750, 4250, 4750};
@@ -38,11 +37,11 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     }
     dac_.setDACOutRange(dac_.eOutputRange10V);
 
-    // Build traits exactly like SpeedFan does
     this->traits_.set_oscillation(true);
     this->traits_.set_speed(true);
     this->traits_.set_supported_speed_count(8);
-    this->traits_.set_supported_preset_modes(this->preset_modes_);
+    // Use initializer_list overload directly
+    this->traits_.set_supported_preset_modes({"Auto", "Manual"});
 
     this->state = true;
     this->speed = this->boot_speed_;
@@ -59,9 +58,7 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     if (call.get_state().has_value()) this->state = *call.get_state();
     if (call.get_speed().has_value()) this->speed = *call.get_speed();
     if (call.get_oscillating().has_value()) this->oscillating = *call.get_oscillating();
-    if (call.get_preset_mode() != nullptr) {
-      this->preset_mode = call.get_preset_mode();
-    }
+    this->apply_preset_mode_(call);
 
     uint16_t voltage_mv = 750;
     if (this->state && this->speed > 0) {
