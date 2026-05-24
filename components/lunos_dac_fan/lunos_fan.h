@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <string>
 
 #include "esphome/core/component.h"
@@ -18,7 +17,6 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
   bool boot_oscillation_;
   std::string boot_preset_{"Auto"};
   std::string current_preset_{"Auto"};
-  fan::FanTraits traits_;
 
   const uint16_t mv_osc[9] = {750, 1250, 1750, 2250, 2750, 3250, 3750, 4250, 4750};
   const uint16_t mv_sum[9] = {750, 6250, 6750, 7250, 7750, 8250, 8750, 9250, 9750};
@@ -38,16 +36,12 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     }
     dac_.setDACOutRange(dac_.eOutputRange10V);
 
-    this->traits_.set_oscillation(true);
-    this->traits_.set_speed(true);
-    this->traits_.set_supported_speed_count(8);
-    this->traits_.set_supported_preset_modes({"Auto", "Manual"});
+    // 2026.4+ API: call on the entity, not on traits
+    this->set_supported_preset_modes({"Auto", "Manual"});
 
     this->state = true;
     this->speed = this->boot_speed_;
     this->oscillating = this->boot_oscillation_;
-
-    // Set initial preset via traits lookup so the pointer is valid
     this->set_preset_mode_(this->boot_preset_);
 
     uint16_t boot_mv = this->oscillating ? mv_osc[this->speed] : mv_sum[this->speed];
@@ -55,14 +49,19 @@ class LunosDACFan : public fan::Fan, public Component, public i2c::I2CDevice {
     this->publish_state();
   }
 
-  fan::FanTraits get_traits() override { return this->traits_; }
+  fan::FanTraits get_traits() override {
+    auto traits = fan::FanTraits();
+    traits.set_oscillation(true);
+    traits.set_speed(true);
+    traits.set_supported_speed_count(8);
+    return traits;
+  }
 
   void control(const fan::FanCall &call) override {
     if (call.get_state().has_value()) this->state = *call.get_state();
     if (call.get_speed().has_value()) this->speed = *call.get_speed();
     if (call.get_oscillating().has_value()) this->oscillating = *call.get_oscillating();
 
-    // If preset is explicitly changed, remember it; otherwise restore current preset
     if (call.get_preset_mode() != nullptr) {
       this->current_preset_ = call.get_preset_mode();
     }
